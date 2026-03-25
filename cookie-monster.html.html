@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Cookie Monster</title>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        body {
+            background: linear-gradient(135deg, #8B4513, #d4a373);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: -apple-system, Helvetica, sans-serif;
+            margin: 0;
+            padding: 16px;
+        }
+        .game-container {
+            background: rgba(255,255,255,0.95);
+            border-radius: 40px;
+            padding: 20px;
+            text-align: center;
+            max-width: 450px;
+            width: 100%;
+        }
+        h1 { font-size: 1.8em; margin: 0; color: #8B4513; }
+        .stats {
+            display: flex;
+            gap: 12px;
+            margin: 15px 0;
+        }
+        .stat-card {
+            background: #f0e6d2;
+            border-radius: 20px;
+            padding: 12px;
+            flex: 1;
+        }
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #5d3a1a;
+        }
+        .cookie {
+            cursor: pointer;
+            margin: 15px auto;
+            display: inline-block;
+        }
+        .cookie img {
+            width: 160px;
+            height: auto;
+        }
+        .cookie:active {
+            transform: scale(0.95);
+        }
+        .cps-card {
+            background: #e8f0fe;
+            border-radius: 20px;
+            padding: 12px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        .achievements-section {
+            background: #fff5e6;
+            border-radius: 20px;
+            padding: 12px;
+            margin: 15px 0;
+            border: 2px solid #ffd700;
+        }
+        .achievement-badge {
+            display: inline-block;
+            background: white;
+            border-radius: 30px;
+            padding: 5px 12px;
+            margin: 4px;
+            font-size: 0.7em;
+        }
+        .achievement-badge.unlocked {
+            background: #ffd700;
+        }
+        .achievement-badge.locked {
+            opacity: 0.5;
+        }
+        .upgrade {
+            background: white;
+            border: 2px solid #d4a373;
+            border-radius: 15px;
+            padding: 12px;
+            margin: 8px 0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .upgrade:active {
+            transform: scale(0.98);
+        }
+        .upgrade.disabled {
+            opacity: 0.5;
+        }
+        .upgrade-price {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 30px;
+            width: 100%;
+            margin-top: 12px;
+            font-weight: bold;
+        }
+        button:active {
+            transform: scale(0.97);
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -80px) scale(1.2); }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <h1>👾 Cookie Monster 🍪</h1>
+    
+    <div class="stats">
+        <div class="stat-card"><div class="stat-value">🍪 <span id="cookieCount">0</span></div></div>
+        <div class="stat-card"><div class="stat-value">👆 <span id="totalClicksDisplay">0</span></div></div>
+    </div>
+    
+    <div class="cookie" id="cookieBtn">
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23d4a373'/%3E%3Ccircle cx='30' cy='35' r='4' fill='%238B4513'/%3E%3Ccircle cx='70' cy='35' r='4' fill='%238B4513'/%3E%3Ccircle cx='50' cy='55' r='5' fill='%238B4513'/%3E%3Cpath d='M35 70 Q50 80 65 70' stroke='%238B4513' stroke-width='3' fill='none'/%3E%3C/svg%3E" alt="Cookie">
+    </div>
+    
+    <div class="cps-card">⚡ Saniyede: <span id="cps">0</span> kurabiye</div>
+    
+    <div class="achievements-section">
+        <div id="achievementsList"></div>
+    </div>
+    
+    <div class="shop">
+        <div class="upgrade" id="upgrade1"><span>👩‍🍳 Acemi Fırıncı (+1/sn)</span><span class="upgrade-price">🍪 10</span></div>
+        <div class="upgrade" id="upgrade2"><span>🏭 Küçük Fırın (+5/sn)</span><span class="upgrade-price">🍪 50</span></div>
+        <div class="upgrade" id="upgrade3"><span>🏭 Büyük Fabrika (+10/sn)</span><span class="upgrade-price">🍪 200</span></div>
+        <div class="upgrade" id="upgrade4"><span>🚀 Uzay İstasyonu (+50/sn)</span><span class="upgrade-price">🍪 1000</span></div>
+        <button id="resetBtn">🔄 SIFIRLA</button>
+    </div>
+</div>
+
+<script>
+    let cookieCount = 0, cps = 0, totalClicks = 0, totalUpgradesBought = 0;
+    
+    let achievements = [
+        { id: "firstClick", name: "🍪 İlk Tık!", requirement: 1, type: "click", unlocked: false },
+        { id: "clicker10", name: "👆 10 Tık", requirement: 10, type: "click", unlocked: false },
+        { id: "clicker100", name: "💪 100 Tık", requirement: 100, type: "click", unlocked: false },
+        { id: "cookie1000", name: "🍪🍪 1000 Kurabiye", requirement: 1000, type: "cookie", unlocked: false },
+        { id: "cookie10000", name: "👑 10000 Kurabiye", requirement: 10000, type: "cookie", unlocked: false },
+        { id: "cps10", name: "⚡ 10 CPS", requirement: 10, type: "cps", unlocked: false },
+        { id: "cps50", name: "🏭 50 CPS", requirement: 50, type: "cps", unlocked: false },
+        { id: "upgradeFirst", name: "🛒 İlk Yükseltme", requirement: 1, type: "upgrade", unlocked: false }
+    ];
+    
+    let upgrades = {
+        baker: { level: 0, baseCps: 1, price: 10 },
+        bakery: { level: 0, baseCps: 5, price: 50 },
+        factory: { level: 0, baseCps: 10, price: 200 },
+        space: { level: 0, baseCps: 50, price: 1000 }
+    };
+    
+    function saveGame() {
+        localStorage.setItem("cookieMonsterSave", JSON.stringify({
+            cookieCount, upgrades, totalClicks, totalUpgradesBought,
+            achievements: achievements.map(a => ({ id: a.id, unlocked: a.unlocked }))
+        }));
+    }
+    
+    function loadGame() {
+        let saved = localStorage.getItem("cookieMonsterSave");
+        if(saved) {
+            let data = JSON.parse(saved);
+            cookieCount = data.cookieCount || 0;
+            if(data.upgrades) upgrades = data.upgrades;
+            totalClicks = data.totalClicks || 0;
+            totalUpgradesBought = data.totalUpgradesBought || 0;
+            if(data.achievements) {
+                data.achievements.forEach(sa => {
+                    let a = achievements.find(ac => ac.id === sa.id);
+                    if(a) a.unlocked = sa.unlocked;
+                });
+            }
+        }
+        updateAll();
+    }
+    
+    function checkAchievement(ach) {
+        if(!ach || ach.unlocked) return false;
+        let cond = false;
+        if(ach.type === "click") cond = totalClicks >= ach.requirement;
+        else if(ach.type === "cookie") cond = cookieCount >= ach.requirement;
+        else if(ach.type === "cps") cond = cps >= ach.requirement;
+        else if(ach.type === "upgrade") cond = totalUpgradesBought >= ach.requirement;
+        
+        if(cond) {
+            ach.unlocked = true;
+            showNotif(ach.name);
+            saveGame();
+            updateAchievementsUI();
+            return true;
+        }
+        return false;
+    }
+    
+    function showNotif(name) {
+        let n = document.createElement("div");
+        n.innerHTML = `<div style="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#ffd700;color:#8B4513;padding:10px 20px;border-radius:30px;font-weight:bold;z-index:1000;text-align:center;">🏆 ${name} AÇILDI! 🏆</div>`;
+        document.body.appendChild(n);
+        setTimeout(() => n.remove(), 2000);
+    }
+    
+    function updateAchievementsUI() {
+        let container = document.getElementById("achievementsList");
+        if(container) {
+            container.innerHTML = achievements.map(a => `<div class="achievement-badge ${a.unlocked ? 'unlocked' : 'locked'}">${a.name}</div>`).join('');
+        }
+    }
+    
+    function updateCPS() {
+        cps = upgrades.baker.level * upgrades.baker.baseCps + upgrades.bakery.level * upgrades.bakery.baseCps + upgrades.factory.level * upgrades.factory.baseCps + upgrades.space.level * upgrades.space.baseCps;
+        document.getElementById("cps").innerText = cps;
+        checkAchievement(achievements.find(a => a.type === "cps"));
+    }
+    
+    function updateDisplay() {
+        document.getElementById("cookieCount").innerText = Math.floor(cookieCount);
+        document.getElementById("totalClicksDisplay").innerText = totalClicks;
+        updateUpgradeUI();
+        saveGame();
+        checkAchievement(achievements.find(a => a.type === "cookie"));
+    }
+    
+    function updateAll() {
+        updateDisplay();
+        updateCPS();
+        updateAchievementsUI();
+    }
+    
+    function updateUpgradeUI() {
+        let list = [upgrades.baker, upgrades.bakery, upgrades.factory, upgrades.space];
+        let ids = ["upgrade1", "upgrade2", "upgrade3", "upgrade4"];
+        list.forEach((up, i) => {
+            let el = document.getElementById(ids[i]);
+            if(el) {
+                let price = up.price * (up.level + 1);
+                let priceSpan = el.querySelector(".upgrade-price");
+                if(priceSpan) priceSpan.innerHTML = `🍪 ${price}`;
+                if(cookieCount < price) el.classList.add("disabled");
+                else el.classList.remove("disabled");
+            }
+        });
+    }
+    
+    function addCookies(amt) {
+        cookieCount += amt;
+        updateDisplay();
+    }
+    
+    function buyUpgrade(key, index) {
+        let up = upgrades[key];
+        let price = up.price * (up.level + 1);
+        if(cookieCount >= price) {
+            cookieCount -= price;
+            up.level++;
+            totalUpgradesBought++;
+            updateCPS();
+            updateDisplay();
+            checkAchievement(achievements.find(a => a.type === "upgrade"));
+        }
+    }
+    
+    setInterval(() => {
+        if(cps > 0) {
+            cookieCount += cps;
+            updateDisplay();
+        }
+    }, 1000);
+    
+    // Tıklama - iPhone için touch event
+    let cookieBtn = document.getElementById("cookieBtn");
+    function handleTap(e) {
+        e.preventDefault();
+        addCookies(1);
+        totalClicks++;
+        checkAchievement(achievements.find(a => a.id === "firstClick"));
+        checkAchievement(achievements.find(a => a.id === "clicker10"));
+        checkAchievement(achievements.find(a => a.id === "clicker100"));
+        
+        let effect = document.createElement("div");
+        let x = e.touches ? e.touches[0].clientX : e.clientX;
+        let y = e.touches ? e.touches[0].clientY : e.clientY;
+        effect.innerText = "+1 🍪";
+        effect.style.position = "fixed";
+        effect.style.color = "#d4a373";
+        effect.style.fontWeight = "bold";
+        effect.style.left = x + "px";
+        effect.style.top = y + "px";
+        effect.style.transform = "translate(-50%, -50%)";
+        effect.style.animation = "floatUp 0.6s ease-out forwards";
+        effect.style.pointerEvents = "none";
+        effect.style.zIndex = "1000";
+        document.body.appendChild(effect);
+        setTimeout(() => effect.remove(), 600);
+    }
+    
+    cookieBtn.addEventListener("touchstart", handleTap, { passive: false });
+    cookieBtn.addEventListener("mousedown", handleTap);
+    
+    document.getElementById("upgrade1").addEventListener("click", () => buyUpgrade("baker", 0));
+    document.getElementById("upgrade2").addEventListener("click", () => buyUpgrade("bakery", 1));
+    document.getElementById("upgrade3").addEventListener("click", () => buyUpgrade("factory", 2));
+    document.getElementById("upgrade4").addEventListener("click", () => buyUpgrade("space", 3));
+    
+    document.getElementById("resetBtn").addEventListener("click", () => {
+        if(confirm("Sıfırlansın mı?")) {
+            cookieCount = 0;
+            totalClicks = 0;
+            totalUpgradesBought = 0;
+            upgrades = {
+                baker: { level: 0, baseCps: 1, price: 10 },
+                bakery: { level: 0, baseCps: 5, price: 50 },
+                factory: { level: 0, baseCps: 10, price: 200 },
+                space: { level: 0, baseCps: 50, price: 1000 }
+            };
+            achievements.forEach(a => a.unlocked = false);
+            updateCPS();
+            updateAll();
+            saveGame();
+        }
+    });
+    
+    loadGame();
+</script>
+</body>
+</html>
